@@ -10,6 +10,7 @@ group :development do
 end
 
 group :test do
+	gem 'test-unit', '~> 3.2'
 	gem 'rack-test', '~> 1.0'
 	gem 'mocha', '~> 1.0'
 	gem 'rake', '~> 12.3'
