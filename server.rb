@@ -14,7 +14,7 @@ set :bind, '0.0.0.0'
 class GHAapp < Sinatra::Application
 	# Converts the newlines. Expects that the private key has been set as an
 	# environment variable in PEM format.
-	PRIVATE_KEY = OpenSSL::PKey::RSA.new(ENV['GITHUB_PRIVATE_KEY'].gsub('\n', "\n"))
+	PRIVATE_KEY = OpenSSL::PKey::RSA.new(ENV['GITHUB_PRIVATE_KEY'].gsub('\n', "\n")) if ENV.include? 'GITHUB_PRIVATE_KEY'
 
 	# Your registered app must have a secret set. The secret is used to verify
 	# that webhooks are sent by GitHub.
