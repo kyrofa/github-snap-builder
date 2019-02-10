@@ -30,3 +30,9 @@ class SnapPushError < SnapBuilderError
 		super("failed to push/release snap")
 	end
 end
+
+class AuthenticationError < SnapBuilderError
+	def initialize(message)
+		super("failed to authenticate: #{message}")
+	end
+end

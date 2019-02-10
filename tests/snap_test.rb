@@ -30,8 +30,20 @@ class SnapTest < SnapBuilderBaseTest
 
 		snap = Snap.new(snap_path.path)
 		snap.expects(:snapcraft).with("push", snap_path.path, '--release', 'test-channel').returns(true)
+		Open3.expects(:capture3).with('snapcraft', 'login', '--with', '-', stdin_data: 'token').returns(['', '', 0])
 
-		snap.push_and_release('test-channel')
+		snap.push_and_release('token', 'test-channel')
+	end
+
+	def test_authentication_failure
+		snap_path = Tempfile.new(['test-snap', '.snap'])
+
+		snap = Snap.new(snap_path.path)
+		Open3.expects(:capture3).with('snapcraft', 'login', '--with', '-', stdin_data: 'token').returns(['', 'bad error', 1])
+
+		assert_raise AuthenticationError.new('bad error') do
+			snap.push_and_release('token', 'test-channel')
+		end
 	end
 
 	def test_push_and_release_failure
@@ -39,9 +51,10 @@ class SnapTest < SnapBuilderBaseTest
 
 		snap = Snap.new(snap_path.path)
 		snap.expects(:snapcraft).with("push", snap_path.path, '--release', 'test-channel').returns(false)
+		Open3.expects(:capture3).with('snapcraft', 'login', '--with', '-', stdin_data: 'token').returns(['', '', 0])
 
 		assert_raise SnapPushError do
-			snap.push_and_release('test-channel')
+			snap.push_and_release('token', 'test-channel')
 		end
 	end
 end

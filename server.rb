@@ -1,27 +1,33 @@
-require 'sinatra'
+require 'sinatra/base'
 require 'octokit'
-require 'dotenv/load' # Manages environment variables
 require 'json'
 require 'openssl'     # Verifies the webhook signature
 require 'jwt'         # Authenticates a GitHub App
 require 'time'        # Gets ISO 8601 representation of a Time object
 require 'logger'      # Logs debug statements
+require 'yaml'
 require_relative 'snap_builder'
 
-set :port, 3000
-set :bind, '0.0.0.0'
+if ENV.include? 'SNAP_BUILDER_CONFIG'
+	$CONFIG = YAML.safe_load(File.read(ENV['SNAP_BUILDER_CONFIG']))
+else
+	$CONFIG = {}
+end
 
 class GHAapp < Sinatra::Application
+	set :port, $CONFIG.fetch('port', 3000)
+	set :bind, $CONFIG.fetch('bind', '0.0.0.0')
+
 	# Converts the newlines. Expects that the private key has been set as an
 	# environment variable in PEM format.
-	PRIVATE_KEY = OpenSSL::PKey::RSA.new(ENV['GITHUB_PRIVATE_KEY'].gsub('\n', "\n")) if ENV.include? 'GITHUB_PRIVATE_KEY'
+	PRIVATE_KEY = OpenSSL::PKey::RSA.new($CONFIG['github_app_private_key'].gsub('\n', "\n")) if $CONFIG.include? 'github_app_private_key'
 
 	# Your registered app must have a secret set. The secret is used to verify
 	# that webhooks are sent by GitHub.
-	WEBHOOK_SECRET = ENV['GITHUB_WEBHOOK_SECRET']
+	WEBHOOK_SECRET = $CONFIG['github_webhook_secret']
 
 	# The GitHub App's identifier (type integer) set when registering an app.
-	APP_IDENTIFIER = ENV['GITHUB_APP_IDENTIFIER']
+	APP_IDENTIFIER = $CONFIG['github_app_id']
 
 	# Turn on Sinatra's verbose logging during development
 	configure :development do
@@ -40,9 +46,14 @@ class GHAapp < Sinatra::Application
 	post '/event_handler' do
 		case request.env['HTTP_X_GITHUB_EVENT']
 		when 'pull_request'
+			repo = @payload['pull_request']['base']['repo']['full_name']
+			unless $CONFIG.fetch('repos', {}).include? repo
+				logger.info "Not configured for repo '#{repo}'. Ignoring event..."
+				return 200 # Ignored, but still successful
+			end
+
 			case @payload['action']
 			when "opened", "reopened", "synchronize"
-				logger.debug "Was a PR: #{@payload_raw}"
 				handle_pull_request_updated_event(@payload)
 			end
 		end
@@ -60,6 +71,11 @@ class GHAapp < Sinatra::Application
 			commit_sha = pull_request['head']['sha']
 			pr_number = pull_request['number']
 
+			config = $CONFIG['repos'] || raise("Config missing repos definition")
+			repo_config = config[repo] || raise("Config missing repo definition for '#{repo}'")
+			channel = repo_config.fetch('channel', 'edge') || raise("'#{repo}' config missing channel")
+			token = repo_config['token'] || raise("'#{repo}' config missing token")
+
 			@installation_client.create_status(repo, commit_sha, 'pending', {
 				context: "Snap Builder",
 				description: "Currently building a snap..."
@@ -68,8 +84,10 @@ class GHAapp < Sinatra::Application
 			begin
 				begin
 					builder = SnapBuilder.new(clone_url, commit_sha)
+					logger.info "Building snap for '#{repo}'"
 					snap = builder.build()
 				rescue SnapBuilderError => e
+					logger.error 'Failed to build snap'
 					@installation_client.create_status(repo, commit_sha, 'error', {
 						context: "Snap Builder",
 						description: "Snap failed to build. Please see logs."
@@ -78,9 +96,11 @@ class GHAapp < Sinatra::Application
 				end
 
 				begin
-					channel = "edge/pr-#{pr_number}"
-					snap.push_and_release(channel)
+					full_channel = "#{channel}/pr-#{pr_number}"
+					logger.info "Pushing and releasing snap into '#{full_channel}'"
+					snap.push_and_release(token, full_channel)
 				rescue SnapBuilderError => e
+					logger.error 'Failed to push/release snap'
 					@installation_client.create_status(repo, commit_sha, 'error', {
 						context: "Snap Builder",
 						description: "Snap failed to push/release. Please see logs."
@@ -88,11 +108,13 @@ class GHAapp < Sinatra::Application
 					return
 				end
 
+				logger.info 'Built and released snap, all done'
 				@installation_client.create_status(repo, commit_sha, 'success', {
 					context: "Snap Builder",
 					description: "Snap built and released to '#{channel}'"
 				})
 			rescue => e
+				logger.error "Encountered unexpected error: #{e.message}"
 				@installation_client.create_status(repo, commit_sha, 'error', {
 					context: "Snap Builder",
 					description: "Encountered an error: #{e.message}"
