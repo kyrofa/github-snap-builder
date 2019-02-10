@@ -20,6 +20,7 @@ GEM
       rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
+    rake (12.3.2)
     rugged (0.27.7)
     sawyer (0.8.1)
       addressable (>= 2.3.5, < 2.6)
@@ -40,6 +41,7 @@ DEPENDENCIES
   mocha (~> 1.0)
   octokit (~> 4.0)
   rack-test (~> 1.0)
+  rake (~> 12.3)
   rugged (~> 0.0)
   sinatra (~> 2.0)
 

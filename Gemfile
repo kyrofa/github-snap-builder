@@ -12,4 +12,5 @@ end
 group :test do
 	gem 'rack-test', '~> 1.0'
 	gem 'mocha', '~> 1.0'
+	gem 'rake', '~> 12.3'
 end
