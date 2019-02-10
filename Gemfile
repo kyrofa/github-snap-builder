@@ -1,13 +1,4 @@
-source 'http://rubygems.org'
+source "https://rubygems.org"
 
-gem 'sinatra', '~> 2.0'
-gem 'jwt', '~> 2.1'
-gem 'octokit', '~> 4.0'
-gem 'rugged', '~> 0.0'
-
-group :test do
-	gem 'test-unit', '~> 3.2'
-	gem 'rack-test', '~> 1.0'
-	gem 'mocha', '~> 1.0'
-	gem 'rake', '~> 12.3'
-end
+# Specify your gem's dependencies in github_snap_builder.gemspec
+gemspec

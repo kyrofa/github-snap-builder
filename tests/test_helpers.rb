@@ -3,12 +3,14 @@ ENV['APP_ENV'] = 'test'
 require 'test/unit'
 require 'rack/test'
 require 'mocha/test_unit'
-require_relative '../server.rb'
+require 'github_snap_builder/server'
 
-class SnapBuilderBaseTest < Test::Unit::TestCase
-	include Rack::Test::Methods
+module GithubSnapBuilder
+	class SnapBuilderBaseTest < Test::Unit::TestCase
+		include Rack::Test::Methods
 
-	def app
-		GHAapp
+		def app
+			Application
+		end
 	end
 end

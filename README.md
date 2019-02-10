@@ -1,21 +1,35 @@
-This is an example GitHub App that adds a label to all new issues opened in a repository. You can follow the "[Using the GitHub API in your app](https://developer.github.com/apps/quickstart-guides/using-the-github-api-in-your-app/)" quickstart guide on developer.github.com to learn how to build the app code in `server.rb`.
+# GithubSnapBuilder
 
-This project listens for webhook events and uses the Octokit.rb library to make REST API calls. This example project consists of two different servers:
-* `template_server.rb` (GitHub App template code)
-* `server.rb` (completed project)
+Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/github_snap_builder`. To experiment with that code, run `bin/console` for an interactive prompt.
 
-To learn how to set up a template GitHub App, follow the "[Setting up your development environment](https://developer.github.com/apps/quickstart-guides/setting-up-your-development-environment/)" quickstart guide on developer.github.com.
+TODO: Delete this and the text above, and describe your gem
 
-## Install
+## Installation
 
-To run the code, make sure you have [Bundler](http://gembundler.com/) installed; then enter `bundle install` on the command line.
+Add this line to your application's Gemfile:
 
-## Set environment variables
+```ruby
+gem 'github_snap_builder'
+```
 
-1. Create a copy of the `.env-example` file called `.env`.
-2. Add your GitHub App's private key, app ID, and webhook secret to the `.env` file.
+And then execute:
 
-## Run the server
+    $ bundle
 
-1. Run `ruby template_server.rb` or `ruby server.rb` on the command line.
-1. View the default Sinatra app at `localhost:3000`.
+Or install it yourself as:
+
+    $ gem install github_snap_builder
+
+## Usage
+
+TODO: Write usage instructions here
+
+## Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/github_snap_builder.
