@@ -1,11 +1,12 @@
 require_relative 'snap_builder_base'
+require_relative 'errors'
 
 class Snap < SnapBuilderBase
 	def initialize(path)
 		super()
 		@path = path
 		unless File.exist? path
-			raise MissingSnapFileError.new(path)
+			raise MissingSnapFileError, path
 		end
 
 		# So that the caller doesn't HAVE to call cleanup
@@ -13,7 +14,9 @@ class Snap < SnapBuilderBase
 	end
 
 	def push_and_release(channel)
-		snapcraft('push', @path, '--release', channel)
+		unless snapcraft('push', @path, '--release', channel)
+			raise SnapPushError
+		end
 	end
 
 	def cleanup

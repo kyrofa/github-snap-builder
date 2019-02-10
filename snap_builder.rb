@@ -17,8 +17,8 @@ class SnapBuilder < SnapBuilderBase
 		Dir.mktmpdir do |tempdir|
 			Dir.chdir(tempdir) do
 				# First of all, clone the repository and get on the proper hash
-				Rugged::Repository.clone_at(
-					@clone_url, '.', {checkout_branch: @commit_sha})
+				repo = Rugged::Repository.clone_at(@clone_url, '.',)
+				repo.checkout(@commit_sha, {strategy: :force})
 
 				# Factor out any snaps that existed before we build the new one
 				existing_snaps = Dir.glob('*.snap')
@@ -31,7 +31,7 @@ class SnapBuilder < SnapBuilderBase
 				if new_snaps.empty?
 					raise BuildFailedError
 				elsif new_snaps.length > 1
-					raise TooManySnapsError.new(new_snaps)
+					raise TooManySnapsError, new_snaps
 				end
 
 				# The directory we're in right now will be removed shortly. Copy the

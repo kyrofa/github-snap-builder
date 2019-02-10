@@ -24,3 +24,9 @@ class TooManySnapsError < SnapBuilderError
 		super("expected to find a single snap, found #{paths.length}: #{paths}")
 	end
 end
+
+class SnapPushError < SnapBuilderError
+	def initialize
+		super("failed to push/release snap")
+	end
+end

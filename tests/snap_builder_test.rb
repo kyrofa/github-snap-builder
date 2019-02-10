@@ -16,9 +16,12 @@ class SnapBuilderTest < SnapBuilderBaseTest
 	end
 
 	def test_build
+		mock_repo = mock('repo')
+		Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+		mock_repo.expects(:checkout).with('test-sha', {strategy: :force})
+
 		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
-		Rugged::Repository.expects(:clone_at).with(
-			'test-url', '.', {checkout_branch: 'test-sha'})
+
 		builder = SnapBuilder.new('test-url', 'test-sha')
 		builder.expects(:snapcraft).with() do
 			FileUtils.touch('test.snap')
@@ -28,11 +31,13 @@ class SnapBuilderTest < SnapBuilderBaseTest
 	end
 
 	def test_build_no_snaps
+		mock_repo = mock('repo')
+		Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+		mock_repo.expects(:checkout).with('test-sha', {strategy: :force})
+
 		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
-		Rugged::Repository.expects(:clone_at).with(
-			'test-url', '.', {checkout_branch: 'test-sha'})
 		builder = SnapBuilder.new('test-url', 'test-sha')
-		builder.expects(:snapcraft).with()
+		builder.expects(:snapcraft).with('--destructive-mode')
 
 		assert_raises BuildFailedError do
 			builder.build()
@@ -40,14 +45,17 @@ class SnapBuilderTest < SnapBuilderBaseTest
 	end
 
 	def test_build_no_new_snaps
-		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
-		Rugged::Repository.expects(:clone_at).with('test-url', '.', {checkout_branch: 'test-sha'}) do
+		mock_repo = mock('repo')
+		Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+		mock_repo.expects(:checkout).with('test-sha', {strategy: :force}) do
 			# This existed before the build, so it should be factored out
 			FileUtils.touch('test.snap')
 		end
 
+		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
+
 		builder = SnapBuilder.new('test-url', 'test-sha')
-		builder.expects(:snapcraft).with()
+		builder.expects(:snapcraft).with('--destructive-mode')
 
 		assert_raises BuildFailedError do
 			builder.build()
@@ -55,10 +63,14 @@ class SnapBuilderTest < SnapBuilderBaseTest
 	end
 
 	def test_build_multiple_snaps_takes_latest
-		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
-		Rugged::Repository.expects(:clone_at).with('test-url', '.', {checkout_branch: 'test-sha'}) do
+		mock_repo = mock('repo')
+		Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+		mock_repo.expects(:checkout).with('test-sha', {strategy: :force}) do
 			FileUtils.touch('test1.snap')
 		end
+
+		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
+
 		builder = SnapBuilder.new('test-url', 'test-sha')
 		builder.expects(:snapcraft).with() do
 			FileUtils.touch('test2.snap')
@@ -68,9 +80,12 @@ class SnapBuilderTest < SnapBuilderBaseTest
 	end
 
 	def test_build_multiple_snaps_built_error
+		mock_repo = mock('repo')
+		Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+		mock_repo.expects(:checkout).with('test-sha', {strategy: :force})
+
 		SnapBuilder.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
-		Rugged::Repository.expects(:clone_at).with(
-			'test-url', '.', {checkout_branch: 'test-sha'})
+
 		builder = SnapBuilder.new('test-url', 'test-sha')
 		builder.expects(:snapcraft).with() do
 			FileUtils.touch('test1.snap')

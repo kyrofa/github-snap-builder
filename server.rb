@@ -6,6 +6,7 @@ require 'openssl'     # Verifies the webhook signature
 require 'jwt'         # Authenticates a GitHub App
 require 'time'        # Gets ISO 8601 representation of a Time object
 require 'logger'      # Logs debug statements
+require_relative 'snap_builder'
 
 set :port, 3000
 set :bind, '0.0.0.0'
@@ -55,7 +56,7 @@ class GHAapp < Sinatra::Application
 		def handle_pull_request_updated_event(payload)
 			pull_request = payload['pull_request']
 			repo = pull_request['base']['repo']['full_name']
-			clone_url = pull_request['head']['http_url']
+			clone_url = pull_request['head']['repo']['html_url']
 			commit_sha = pull_request['head']['sha']
 			pr_number = pull_request['number']
 
@@ -63,16 +64,40 @@ class GHAapp < Sinatra::Application
 				context: "Snap Builder",
 				description: "Currently building a snap..."
 			})
-			builder = Builder.new(repo, clone_url, commit_sha)
-			snap = builder.build()
 
-			channel = "edge/pr-#{pr_number}"
-			snap.push_and_release(channel)
+			begin
+				begin
+					builder = SnapBuilder.new(clone_url, commit_sha)
+					snap = builder.build()
+				rescue SnapBuilderError => e
+					@installation_client.create_status(repo, commit_sha, 'error', {
+						context: "Snap Builder",
+						description: "Snap failed to build. Please see logs."
+					})
+					return
+				end
 
-			@installation_client.create_status(repo, commit_sha, 'success', {
-				context: "Snap Builder",
-				description: "Snap built and released to '#{channel}'"
-			})
+				begin
+					channel = "edge/pr-#{pr_number}"
+					snap.push_and_release(channel)
+				rescue SnapBuilderError => e
+					@installation_client.create_status(repo, commit_sha, 'error', {
+						context: "Snap Builder",
+						description: "Snap failed to push/release. Please see logs."
+					})
+					return
+				end
+
+				@installation_client.create_status(repo, commit_sha, 'success', {
+					context: "Snap Builder",
+					description: "Snap built and released to '#{channel}'"
+				})
+			rescue => e
+				@installation_client.create_status(repo, commit_sha, 'error', {
+					context: "Snap Builder",
+					description: "Encountered an error: #{e.message}"
+				})
+			end
 		end
 
 		# Saves the raw payload and converts the payload to JSON format
