@@ -7,3 +7,9 @@
 /spec/reports/
 /tmp/
 *.gem
+snap/.snapcraft/
+parts
+stage/
+prime/
+*.snap
+.vscode/

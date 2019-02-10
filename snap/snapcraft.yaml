@@ -1,0 +1,38 @@
+name: github-snap-builder
+version: git
+summary: Server component of github app for building snaps
+description: |
+  Server component of github app for building snaps
+
+grade: stable
+confinement: classic
+
+apps:
+  github-snap-builder:
+    command: wrapper $SNAP/bin/ruby $SNAP/bin/github_snap_builder
+
+parts:
+  my-part:
+    plugin: ruby
+    source: .
+    ruby-version: 2.6.1
+    override-build: |
+      snapcraftctl build
+
+      # Built and install the gem
+      gem build github_snap_builder.gemspec
+      gem install github_snap_builder-*.gem --env-shebang --no-document
+
+      # Write a wrapper that sets our environment (so we can avoid setting this
+      # in the YAML).
+      cat << EOF >> $SNAPCRAFT_PART_INSTALL/wrapper
+      #!/bin/sh
+      export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:$(echo "$LD_LIBRARY_PATH" | sed "s|$SNAPCRAFT_PART_INSTALL|\$SNAP|g")"
+      export RUBYLIB="$(echo "$RUBYLIB" | sed "s|$SNAPCRAFT_PART_INSTALL|\$SNAP|g")"
+      export GEM_HOME="$(echo "$GEM_HOME" | sed "s|$SNAPCRAFT_PART_INSTALL|\$SNAP|g")"
+      export GEM_PATH="$(echo "$GEM_PATH" | sed "s|$SNAPCRAFT_PART_INSTALL|\$SNAP|g")"
+      exec "\$@"
+      EOF
+
+      chmod a+x $SNAPCRAFT_PART_INSTALL/wrapper
+    build-packages: [cmake]
