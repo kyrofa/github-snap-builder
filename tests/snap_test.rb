@@ -2,14 +2,16 @@ require_relative 'test_helpers'
 require_relative '../snap'
 
 class SnapTest < SnapBuilderBaseTest
+	def setup
+		Snap.any_instance.stubs(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
+	end
+
 	def test_constructor
-		Snap.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
 		snap_path = Tempfile.new(['test-snap', '.snap'])
 		Snap.new(snap_path.path)
 	end
 
 	def test_missing_snap_file_is_error
-		Snap.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
 		assert_raise MissingSnapFileError.new("non-existent.snap") do
 			Snap.new("non-existent.snap")
 		end
@@ -24,7 +26,6 @@ class SnapTest < SnapBuilderBaseTest
 	end
 
 	def test_push_and_release
-		Snap.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
 		snap_path = Tempfile.new(['test-snap', '.snap'])
 
 		snap = Snap.new(snap_path.path)
@@ -34,7 +35,6 @@ class SnapTest < SnapBuilderBaseTest
 	end
 
 	def test_push_and_release_failure
-		Snap.any_instance.expects(:find_executable).with('snapcraft').returns('/snap/bin/snapcraft')
 		snap_path = Tempfile.new(['test-snap', '.snap'])
 
 		snap = Snap.new(snap_path.path)
