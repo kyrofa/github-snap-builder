@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+require 'github_snap_builder/config'
+
+if ARGV.length != 1
+	puts "Usage:"
+	puts "  github_snap_builder_config_validator <config file>"
+	exit 0
+end
+
+config = GithubSnapBuilder::Config.new(File.read(ARGV[0]))
+
+begin
+	config.validate
+rescue GithubSnapBuilder::ConfigurationError => e
+	abort e.message
+end

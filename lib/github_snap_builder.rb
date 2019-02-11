@@ -38,4 +38,12 @@ module GithubSnapBuilder
 			super("failed to authenticate: #{message}")
 		end
 	end
+
+	class ConfigurationError < Error; end
+
+	class ConfigurationFieldError < ConfigurationError
+		def initialize(field)
+			super("configuration field is invalid: '#{field}'")
+		end
+	end
 end

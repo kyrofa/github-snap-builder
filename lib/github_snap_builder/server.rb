@@ -6,29 +6,30 @@ require 'jwt'         # Authenticates a GitHub App
 require 'time'        # Gets ISO 8601 representation of a Time object
 require 'logger'      # Logs debug statements
 require 'yaml'
+require 'github_snap_builder/config'
 require 'github_snap_builder/snap_builder'
 
-if ENV.include? 'SNAP_BUILDER_CONFIG'
-	$CONFIG = YAML.safe_load(File.read(ENV['SNAP_BUILDER_CONFIG']))
-else
-	$CONFIG = {}
-end
-
 module GithubSnapBuilder
+	if ENV.include? 'SNAP_BUILDER_CONFIG'
+		CONFIG = Config.new(File.read(ENV['SNAP_BUILDER_CONFIG']))
+	else
+		CONFIG = Config.new('{}')
+	end
+
 	class Application < Sinatra::Application
-		set :port, $CONFIG.fetch('port', 3000)
-		set :bind, $CONFIG.fetch('bind', '0.0.0.0')
+		set :port, CONFIG.port
+		set :bind, CONFIG.bind
 
 		# Converts the newlines. Expects that the private key has been set as an
 		# environment variable in PEM format.
-		PRIVATE_KEY = OpenSSL::PKey::RSA.new($CONFIG['github_app_private_key'].gsub('\n', "\n")) if $CONFIG.include? 'github_app_private_key'
+		PRIVATE_KEY = OpenSSL::PKey::RSA.new(CONFIG.github_app_private_key.gsub('\n', "\n")) if CONFIG.valid?
 
 		# Your registered app must have a secret set. The secret is used to verify
 		# that webhooks are sent by GitHub.
-		WEBHOOK_SECRET = $CONFIG['github_webhook_secret']
+		WEBHOOK_SECRET = CONFIG.github_webhook_secret
 
 		# The GitHub App's identifier (type integer) set when registering an app.
-		APP_IDENTIFIER = $CONFIG['github_app_id']
+		APP_IDENTIFIER = CONFIG.github_app_id
 
 		# Turn on Sinatra's verbose logging during development
 		configure :development do
@@ -48,7 +49,7 @@ module GithubSnapBuilder
 			case request.env['HTTP_X_GITHUB_EVENT']
 			when 'pull_request'
 				repo = @payload['pull_request']['base']['repo']['full_name']
-				unless $CONFIG.fetch('repos', {}).include? repo
+				unless CONFIG.repos_include? repo
 					logger.info "Not configured for repo '#{repo}'. Ignoring event..."
 					return 200 # Ignored, but still successful
 				end
@@ -72,10 +73,9 @@ module GithubSnapBuilder
 				commit_sha = pull_request['head']['sha']
 				pr_number = pull_request['number']
 
-				config = $CONFIG['repos'] || raise("Config missing repos definition")
-				repo_config = config[repo] || raise("Config missing repo definition for '#{repo}'")
-				channel = repo_config.fetch('channel', 'edge') || raise("'#{repo}' config missing channel")
-				token = repo_config['token'] || raise("'#{repo}' config missing token")
+				repo_config = CONFIG.repo(repo) || raise("Config missing repo definition for '#{repo}'")
+				channel = repo_config.channel
+				token = repo_config.token || raise("'#{repo}' config missing token")
 
 				@installation_client.create_status(repo, commit_sha, 'pending', {
 					context: "Snap Builder",

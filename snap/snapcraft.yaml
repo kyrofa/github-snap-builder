@@ -1,4 +1,5 @@
 name: github-snap-builder
+base: core18
 version: git
 summary: Server component of github app for building snaps
 description: |
@@ -10,9 +11,17 @@ confinement: classic
 apps:
   github-snap-builder:
     command: wrapper $SNAP/bin/ruby $SNAP/bin/github_snap_builder
+    daemon: simple
+    environment:
+      SNAP_BUILDER_CONFIG: "$SNAP_DATA/config.yaml"
+
+  configure:
+    command: wrapper $SNAP/configure
+    environment:
+      SNAP_BUILDER_CONFIG: "$SNAP_DATA/config.yaml"
 
 parts:
-  my-part:
+  gem:
     plugin: ruby
     source: .
     ruby-version: 2.6.1
@@ -36,3 +45,8 @@ parts:
 
       chmod a+x $SNAPCRAFT_PART_INSTALL/wrapper
     build-packages: [cmake]
+
+  configure:
+    plugin: dump
+    source: .
+    stage: [configure, sample-config.yaml]
