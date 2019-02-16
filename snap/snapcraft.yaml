@@ -44,7 +44,7 @@ parts:
       EOF
 
       chmod a+x $SNAPCRAFT_PART_INSTALL/wrapper
-    build-packages: [cmake]
+    build-packages: [cmake, pkg-config]
 
   configure:
     plugin: dump
