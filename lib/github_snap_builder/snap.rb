@@ -1,8 +1,8 @@
+require 'open3'
 require 'github_snap_builder'
-require 'github_snap_builder/snap_builder_base'
 
 module GithubSnapBuilder
-	class Snap < SnapBuilderBase
+	class Snap
 		def initialize(path)
 			super()
 			@path = path

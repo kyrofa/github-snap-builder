@@ -11,6 +11,10 @@
 #   nice long key
 #   -----END RSA PRIVATE KEY-----
 
+# REQUIRED. Specify the type of build. Options are:
+#   - docker: run in an ephemeral docker container
+# build_type: docker
+
 # The port on which to listen
 # port: 3000
 

@@ -18,14 +18,6 @@ module GithubSnapBuilder
 			end
 		end
 
-		def test_missing_snapcraft_is_error
-			Snap.any_instance.expects(:find_executable).with('snapcraft').returns('')
-			snap_path = Tempfile.new(['test-snap', '.snap'])
-			assert_raise MissingSnapcraftError do
-				Snap.new(snap_path.path)
-			end
-		end
-
 		def test_push_and_release
 			snap_path = Tempfile.new(['test-snap', '.snap'])
 

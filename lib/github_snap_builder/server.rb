@@ -46,6 +46,11 @@ module GithubSnapBuilder
 		end
 
 		post '/event_handler' do
+			if !CONFIG.valid?
+				logger.info "Invalid config, ignoring event..."
+				return 200
+			end
+
 			case request.env['HTTP_X_GITHUB_EVENT']
 			when 'pull_request'
 				repo = @payload['pull_request']['base']['repo']['full_name']
@@ -86,7 +91,7 @@ module GithubSnapBuilder
 					begin
 						builder = SnapBuilder.new(clone_url, commit_sha)
 						logger.info "Building snap for '#{repo}'"
-						snap = builder.build()
+						snap = builder.build(CONFIG.build_type)
 					rescue Error => e
 						logger.error 'Failed to build snap'
 						@installation_client.create_status(repo, commit_sha, 'error', {

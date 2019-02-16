@@ -39,6 +39,12 @@ module GithubSnapBuilder
 		end
 	end
 
+	class MissingSnapcraftYaml < Error
+		def initialize
+			super("unable to find snapcraft.yaml")
+		end
+	end
+
 	class ConfigurationError < Error; end
 
 	class ConfigurationFieldError < ConfigurationError

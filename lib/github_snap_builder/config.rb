@@ -1,5 +1,6 @@
 require 'yaml'
 require 'github_snap_builder'
+require 'github_snap_builder/snap_builder'
 
 module GithubSnapBuilder
 	class Config
@@ -17,6 +18,10 @@ module GithubSnapBuilder
 
 		def github_app_private_key
 			@config['github_app_private_key']
+		end
+
+		def build_type
+			@config['build_type']
 		end
 
 		def port
@@ -58,6 +63,10 @@ module GithubSnapBuilder
 
 			if github_app_private_key.nil? || !github_app_private_key.is_a?(String) || github_app_private_key.empty?
 				raise ConfigurationFieldError, "github_app_private_key"
+			end
+
+			if build_type.nil? || !build_type.is_a?(String) || build_type.empty? || !SnapBuilder.supported_build_types.include?(build_type)
+				raise ConfigurationFieldError, "build_type"
 			end
 
 			if port.nil? || !port.is_a?(Integer) || port == 0

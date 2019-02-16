@@ -10,6 +10,7 @@ module GithubSnapBuilder
 				"github_app_private_key" => "test-key",
 				"port" => 1234,
 				"bind" => "1.2.3.4",
+				"build_type" => "docker",
 				"repos" => {
 					"test/repo" => {
 						"channel" => "test-channel",
@@ -41,6 +42,10 @@ module GithubSnapBuilder
 
 		def test_bind
 			assert_equal "1.2.3.4", config.bind
+		end
+
+		def test_build_type
+			assert_equal "docker", config.build_type
 		end
 
 		def test_repos
@@ -99,6 +104,20 @@ module GithubSnapBuilder
 			assert !config.valid?
 
 			@config_data["bind"] = ''
+			assert !config.valid?
+		end
+
+		def test_invalid_build_type
+			@config_data["build_type"] = 1
+			assert !config.valid?
+
+			@config_data["build_type"] = ''
+			assert !config.valid?
+
+			@config_data["build_type"] = 'invalid'
+			assert !config.valid?
+
+			@config_data.delete "build_type"
 			assert !config.valid?
 		end
 
