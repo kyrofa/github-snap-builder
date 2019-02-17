@@ -82,18 +82,18 @@ module GithubSnapBuilder
 				channel = repo_config.channel
 				token = repo_config.token || raise("'#{repo}' config missing token")
 
-				@installation_client.create_status(repo, commit_sha, 'pending', {
-					context: "Snap Builder",
-					description: "Currently building a snap..."
-				})
-
 				begin
 					begin
-						builder = SnapBuilder.new(clone_url, commit_sha)
+						@installation_client.create_status(repo, commit_sha, 'pending', {
+							context: "Snap Builder",
+							description: "Currently building a snap..."
+						})
+
+						builder = SnapBuilder.new(clone_url, commit_sha, CONFIG.build_type)
 						logger.info "Building snap for '#{repo}'"
-						snap = builder.build(CONFIG.build_type)
+						snap_path = builder.build
 					rescue Error => e
-						logger.error 'Failed to build snap'
+						logger.error "Failed to build snap: #{e.message}"
 						@installation_client.create_status(repo, commit_sha, 'error', {
 							context: "Snap Builder",
 							description: "Snap failed to build. Please see logs."
@@ -102,14 +102,19 @@ module GithubSnapBuilder
 					end
 
 					begin
+						@installation_client.create_status(repo, commit_sha, 'pending', {
+							context: "Snap Builder",
+							description: "Currently uploading/releasing snap..."
+						})
+
 						full_channel = "#{channel}/pr-#{pr_number}"
 						logger.info "Pushing and releasing snap into '#{full_channel}'"
-						snap.push_and_release(token, full_channel)
+						builder.release(snap_path, token, full_channel)
 					rescue Error => e
-						logger.error 'Failed to push/release snap'
+						logger.error "Failed to push/release snap: #{e.message}"
 						@installation_client.create_status(repo, commit_sha, 'error', {
 							context: "Snap Builder",
-							description: "Snap failed to push/release. Please see logs."
+							description: "Snap failed to upload/release. Please see logs."
 						})
 						return
 					end
@@ -117,14 +122,19 @@ module GithubSnapBuilder
 					logger.info 'Built and released snap, all done'
 					@installation_client.create_status(repo, commit_sha, 'success', {
 						context: "Snap Builder",
-						description: "Snap built and released to '#{channel}'"
+						description: "Snap built and released to '#{full_channel}'"
 					})
 				rescue => e
+					logger.error "Unknown error: #{e.message}"
 					@installation_client.create_status(repo, commit_sha, 'error', {
 						context: "Snap Builder",
 						description: "Encountered an error: #{e.message}"
 					})
 					raise
+				ensure
+					if !snap_path.nil? and File.file? snap_path
+						File.delete snap_path
+					end
 				end
 			end
 

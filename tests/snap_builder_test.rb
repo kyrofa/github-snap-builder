@@ -5,7 +5,7 @@ require_relative 'test_helpers'
 module GithubSnapBuilder
 	class SnapBuilderTest < SnapBuilderBaseTest
 		def setup
-			SnapBuilder.any_instance.stubs(:build_implementation).returns(FakeBuildImplementation.new)
+			SnapBuilder.any_instance.stubs(:build_implementation).returns(FakeBuildImplementation.new('test-base'))
 			@mock_repo = mock('repo')
 			Rugged::Repository.stubs(:clone_at).with('test-url', '.').returns(@mock_repo)
 			@mock_repo.stubs(:checkout).with do
@@ -14,22 +14,21 @@ module GithubSnapBuilder
 		end
 
 		def test_constructor
-			SnapBuilder.new('foo', 'bar')
+			SnapBuilder.new('foo', 'bar', 'fake')
 		end
 
 		def test_build
-			builder = SnapBuilder.new('test-url', 'test-sha')
-			fake = FakeBuildImplementation.new(['test.snap'])
+			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
+			fake = FakeBuildImplementation.new('test-base', ['test.snap'])
 			builder.stubs(:build_implementation).returns(fake)
 
-			assert_instance_of Snap, builder.build("fake")
-			assert_equal "test-base", fake.base
+			assert_instance_of String, builder.build
 		end
 
 		def test_build_no_snaps
-			builder = SnapBuilder.new('test-url', 'test-sha')
+			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
 			assert_raises BuildFailedError do
-				builder.build("fake")
+				builder.build
 			end
 		end
 
@@ -43,9 +42,9 @@ module GithubSnapBuilder
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
-			builder = SnapBuilder.new('test-url', 'test-sha')
+			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
 			assert_raises BuildFailedError do
-				builder.build("fake")
+				builder.build
 			end
 		end
 
@@ -59,20 +58,20 @@ module GithubSnapBuilder
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
-			builder = SnapBuilder.new('test-url', 'test-sha')
+			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
 			builder.stubs(:build_implementation).returns(
-				FakeBuildImplementation.new(['test2.snap']))
+				FakeBuildImplementation.new('test-base', ['test2.snap']))
 
-			assert_instance_of Snap, builder.build("docker")
+			assert_instance_of String, builder.build
 		end
 
 		def test_build_multiple_snaps_built_error
-			builder = SnapBuilder.new('test-url', 'test-sha')
+			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
 			builder.stubs(:build_implementation).returns(
-				FakeBuildImplementation.new(['test1.snap', 'test2.snap']))
+				FakeBuildImplementation.new('test-base', ['test1.snap', 'test2.snap']))
 
 			assert_raises TooManySnapsError do
-				builder.build("docker")
+				builder.build()
 			end
 		end
 
@@ -84,12 +83,12 @@ module GithubSnapBuilder
 	class FakeBuildImplementation
 		attr_reader :base
 
-		def initialize(snap_names=nil)
+		def initialize(base, snap_names=nil)
+			@base = base
 			@snap_names = snap_names
 		end
 
-		def build(base, project_directory)
-			@base = base
+		def build(project_directory)
 			unless @snap_names.nil? || @snap_names.empty?
 				@snap_names.each do |f|
 					FileUtils.touch(f)

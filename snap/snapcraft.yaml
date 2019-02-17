@@ -13,11 +13,13 @@ apps:
     command: wrapper $SNAP/bin/ruby $SNAP/bin/github_snap_builder
     daemon: simple
     environment:
+      APP_ENV: production
       SNAP_BUILDER_CONFIG: "$SNAP_DATA/config.yaml"
 
   configure:
     command: wrapper $SNAP/configure
     environment:
+      APP_ENV: production
       SNAP_BUILDER_CONFIG: "$SNAP_DATA/config.yaml"
 
 parts:

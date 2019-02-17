@@ -45,6 +45,20 @@ module GithubSnapBuilder
 		end
 	end
 
+	class DockerError < Error; end
+
+	class DockerVersionError < DockerError
+		def initialize
+			super("docker is either not installed or is incompatible")
+		end
+	end
+
+	class DockerRunError < DockerError
+		def initialize(command)
+			super("command in docker returned non-zero: #{command}")
+		end
+	end
+
 	class ConfigurationError < Error; end
 
 	class ConfigurationFieldError < ConfigurationError

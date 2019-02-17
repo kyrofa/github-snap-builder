@@ -4,19 +4,20 @@ require 'tempfile'
 require 'yaml'
 require 'rugged'
 require 'github_snap_builder'
-require 'github_snap_builder/snap'
 
 Dir[File.join(__dir__, 'builder_implementations', '*.rb')].each {|file| require file }
 
 module GithubSnapBuilder
 	class SnapBuilder
-		def initialize(clone_url, commit_sha)
+		def initialize(clone_url, commit_sha, build_type)
 			super()
 			@clone_url = clone_url
 			@commit_sha = commit_sha
+			@build_type = build_type
+			@base = 'core16'
 		end
 
-		def build(build_type)
+		def build
 			Dir.mktmpdir do |tempdir|
 				Dir.chdir(tempdir) do
 					# First of all, clone the repository and get on the proper hash
@@ -26,16 +27,16 @@ module GithubSnapBuilder
 					# Before we can actually build the snap, we must first determine the
 					# base to use. The default is "core".
 					snapcraft_yaml = snapcraft_yaml_location
-					base = YAML.safe_load(File.read(snapcraft_yaml)).fetch("base", "core16")
-					if base == "core"
-						base = "core16"
+					@base = YAML.safe_load(File.read(snapcraft_yaml)).fetch("base", @base)
+					if @base == "core"
+						@base = "core16"
 					end
 
 					# Factor out any snaps that existed before we build the new one
 					existing_snaps = Dir.glob('*.snap')
 
 					# Now build the snap
-					build_implementation(build_type).build(base, tempdir)
+					build_implementation(@base, @build_type).build(tempdir)
 
 					# Grab the filename of the snap we just built
 					new_snaps = Dir.glob('*.snap') - existing_snaps
@@ -50,9 +51,13 @@ module GithubSnapBuilder
 					# (which will remove it when it's done with it).
 					snap_file = Tempfile.create [@commit_sha, '.snap']
 					FileUtils.cp new_snaps[0], snap_file
-					Snap.new snap_file.path
+					snap_file.path
 				end
 			end
+		end
+
+		def release(snap_path, token, channel)
+			build_implementation(@base, @build_type).release(snap_path, token, channel)
 		end
 
 		def self.supported_build_types
@@ -63,8 +68,8 @@ module GithubSnapBuilder
 
 		private
 
-		def build_implementation(type)
-			return GithubSnapBuilder.const_get("#{type.capitalize}Builder").new()
+		def build_implementation(base, type)
+			return GithubSnapBuilder.const_get("#{type.capitalize}Builder").new(base)
 		end
 
 		def snapcraft_yaml_location
