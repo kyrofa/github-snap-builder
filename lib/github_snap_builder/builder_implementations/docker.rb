@@ -60,8 +60,8 @@ module GithubSnapBuilder
 				yield container if block_given?
 
 				# Fire up the container and stream its logs
-				@logger.info 'Firing up build...'
-				container.tap(&:start).attach do |stream, chunk|
+				@logger.info 'Firing up...'
+				container.tap(&:start).attach({}, {read_timeout: 600}) do |stream, chunk|
 					if stream == :stdout
 						@logger.info chunk
 					else
@@ -70,7 +70,7 @@ module GithubSnapBuilder
 				end
 
 				if container.wait()['StatusCode'] != 0
-					@logger.error "Build exited non-zero: aborting"
+					@logger.error "Command exited non-zero: aborting"
 					raise DockerRunError, command
 				end
 			ensure
