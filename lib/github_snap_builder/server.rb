@@ -112,7 +112,8 @@ module GithubSnapBuilder
 						logger.error "Failed to build snap: #{e.message}"
 						@installation_client.create_status(repo, commit_sha, 'error', {
 							context: "Snap Builder",
-							description: "Snap failed to build. Please see logs."
+							description: "Snap failed to build. Please see logs.",
+							target_url: log_url
 						})
 						return
 					end
@@ -178,14 +179,14 @@ module GithubSnapBuilder
 			# a malicious third party.
 			def authenticate_app
 				payload = {
-				# The time that this JWT was issued, _i.e._ now.
-				iat: Time.now.to_i,
+					# The time that this JWT was issued, _i.e._ now.
+					iat: Time.now.to_i,
 
-				# JWT expiration time (10 minute maximum)
-				exp: Time.now.to_i + (10 * 60),
+					# JWT expiration time (10 minute maximum)
+					exp: Time.now.to_i + (10 * 60),
 
-				# Your GitHub App's identifier number
-				iss: APP_IDENTIFIER
+					# Your GitHub App's identifier number
+					iss: APP_IDENTIFIER
 				}
 
 				# Cryptographically sign the JWT.

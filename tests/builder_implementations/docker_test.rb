@@ -64,7 +64,7 @@ module GithubSnapBuilder
 			# Expect container based on image to be fired up
 			@mock_image.expects(:id).returns('1234')
 			Docker::Container.expects(:create).with(
-				'Cmd' => ['sh', '-c', "apt update -qq && snapcraft --destructive-mode"],
+				'Cmd' => ['sh', '-c', "apt update -qq && snapcraft"],
 				'Image' => '1234',
 				'Env' => ['SNAPCRAFT_MANAGED_HOST=yes'],
 				'WorkingDir' => '/snapcraft',

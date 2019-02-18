@@ -17,7 +17,9 @@ module GithubSnapBuilder
 		end
 
 		def build(project_directory)
-			run(['sh', '-c', "apt update -qq && snapcraft --destructive-mode"], {
+			# Snapcraft will detect if it's in a docker container and default to
+			# destructive mode.
+			run(['sh', '-c', "apt update -qq && snapcraft"], {
 				'Env' => ['SNAPCRAFT_MANAGED_HOST=yes'],
 				'WorkingDir' => '/snapcraft',
 				'HostConfig' => {
