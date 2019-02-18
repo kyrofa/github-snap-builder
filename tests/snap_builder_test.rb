@@ -6,6 +6,7 @@ module GithubSnapBuilder
 	class SnapBuilderTest < SnapBuilderBaseTest
 		def setup
 			SnapBuilder.any_instance.stubs(:build_implementation).returns(FakeBuildImplementation.new('test-base'))
+			@mock_logger = mock('logger')
 			@mock_repo = mock('repo')
 			Rugged::Repository.stubs(:clone_at).with('test-url', '.').returns(@mock_repo)
 			@mock_repo.stubs(:checkout).with do
@@ -14,11 +15,11 @@ module GithubSnapBuilder
 		end
 
 		def test_constructor
-			SnapBuilder.new('foo', 'bar', 'fake')
+			SnapBuilder.new(@mock_logger, 'foo', 'bar', 'fake')
 		end
 
 		def test_build
-			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
 			fake = FakeBuildImplementation.new('test-base', ['test.snap'])
 			builder.stubs(:build_implementation).returns(fake)
 
@@ -26,7 +27,7 @@ module GithubSnapBuilder
 		end
 
 		def test_build_no_snaps
-			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
 			assert_raises BuildFailedError do
 				builder.build
 			end
@@ -42,7 +43,7 @@ module GithubSnapBuilder
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
-			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
 			assert_raises BuildFailedError do
 				builder.build
 			end
@@ -58,7 +59,7 @@ module GithubSnapBuilder
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
-			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
 			builder.stubs(:build_implementation).returns(
 				FakeBuildImplementation.new('test-base', ['test2.snap']))
 
@@ -66,7 +67,7 @@ module GithubSnapBuilder
 		end
 
 		def test_build_multiple_snaps_built_error
-			builder = SnapBuilder.new('test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
 			builder.stubs(:build_implementation).returns(
 				FakeBuildImplementation.new('test-base', ['test1.snap', 'test2.snap']))
 

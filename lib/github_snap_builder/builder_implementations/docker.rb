@@ -5,7 +5,8 @@ require 'github_snap_builder'
 
 module GithubSnapBuilder
 	class DockerBuilder
-		def initialize(base)
+		def initialize(logger, base)
+			@logger = logger
 			@base = base
 
 			begin
@@ -43,11 +44,13 @@ module GithubSnapBuilder
 
 		def run(command, options)
 			# Grab the image for this base
+			@logger.info 'Fetching image...'
 			image = get_image(@base)
 			options = {'Image' => image.id, 'Cmd' => command}.merge(options)
 
 			begin
 				# Create a new container
+				@logger.info 'Provisioning...'
 				container = Docker::Container.create options
 
 				# Give called the change to mess with container before running
@@ -55,11 +58,17 @@ module GithubSnapBuilder
 				yield container if block_given?
 
 				# Fire up the container and stream its logs
+				@logger.info 'Firing up build...'
 				container.tap(&:start).attach do |stream, chunk|
-					puts "#{stream}: #{chunk}"
+					if stream == :stdout
+						@logger.info chunk
+					else
+						@logger.error chunk
+					end
 				end
 
 				if container.wait()['StatusCode'] != 0
+					@logger.error "Build exited non-zero: aborting"
 					raise DockerRunError, command
 				end
 			ensure
@@ -70,7 +79,7 @@ module GithubSnapBuilder
 		end
 
 		def get_image(base)
-			Docker::Image.create('fromImage' => "github-snap-builder:#{base}")
+			Docker::Image.create('fromImage' => "kyrofa/github-snap-builder:#{base}")
 		end
 	end
 end

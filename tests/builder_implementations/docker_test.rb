@@ -7,6 +7,9 @@ module GithubSnapBuilder
 		def setup
 			@mock_image = mock('image')
 			@mock_container = mock('container')
+			@mock_logger = mock('logger')
+			@mock_logger.stubs(:info)
+			@mock_logger.stubs(:error)
 			Docker.stubs(:validate_version!)
 		end
 
@@ -14,7 +17,7 @@ module GithubSnapBuilder
 			Docker.expects(:validate_version!).raises(Excon::Error::Socket)
 
 			assert_raises DockerVersionError do
-				DockerBuilder.new('test-base')
+				DockerBuilder.new(@mock_logger, 'test-base')
 			end
 		end
 
@@ -29,7 +32,7 @@ module GithubSnapBuilder
 		end
 
 		def test_release
-			Docker::Image.expects(:create).with('fromImage' => 'github-snap-builder:test-base').returns(@mock_image)
+			Docker::Image.expects(:create).with('fromImage' => 'kyrofa/github-snap-builder:test-base').returns(@mock_image)
 
 			# Expect container based on image to be fired up
 			@mock_image.expects(:id).returns('1234')
@@ -49,14 +52,14 @@ module GithubSnapBuilder
 			@mock_container.expects(:wait).returns({'StatusCode' => 0})
 			@mock_container.expects(:delete).with(force: true)
 
-			builder = DockerBuilder.new('test-base')
+			builder = DockerBuilder.new(@mock_logger, 'test-base')
 			builder.release("/foo/test.snap", "test-token", "test-channel")
 		end
 
 		private
 
 		def assert_build(status_code)
-			Docker::Image.expects(:create).with('fromImage' => 'github-snap-builder:test-base').returns(@mock_image)
+			Docker::Image.expects(:create).with('fromImage' => 'kyrofa/github-snap-builder:test-base').returns(@mock_image)
 
 			# Expect container based on image to be fired up
 			@mock_image.expects(:id).returns('1234')
@@ -75,7 +78,7 @@ module GithubSnapBuilder
 			@mock_container.expects(:wait).returns({'StatusCode' => status_code})
 			@mock_container.expects(:delete).with(force: true)
 
-			builder = DockerBuilder.new('test-base')
+			builder = DockerBuilder.new(@mock_logger, 'test-base')
 			builder.build('test-project-dir')
 		end
 	end

@@ -68,6 +68,15 @@ module GithubSnapBuilder
 			200 # success status
 		end
 
+		get '/logs/*' do
+			logfile = File.join logdir, params[:splat][0]
+			if File.file? logfile
+				send_file logfile
+			else
+				404
+			end
+		end
+
 
 		helpers do
 
@@ -82,6 +91,13 @@ module GithubSnapBuilder
 				channel = repo_config.channel
 				token = repo_config.token || raise("'#{repo}' config missing token")
 
+				relative_logfile_path = File.join repo, "#{commit_sha}.log"
+				logfile_path = File.join(logdir, relative_logfile_path)
+				FileUtils.mkpath File.dirname(logfile_path)
+				FileUtils.chmod_R 0755, File.dirname(logfile_path)
+				build_logger = Logger.new(logfile_path)
+				log_url = request.url.gsub 'event_handler', "logs/#{relative_logfile_path}"
+
 				begin
 					begin
 						@installation_client.create_status(repo, commit_sha, 'pending', {
@@ -89,7 +105,7 @@ module GithubSnapBuilder
 							description: "Currently building a snap..."
 						})
 
-						builder = SnapBuilder.new(clone_url, commit_sha, CONFIG.build_type)
+						builder = SnapBuilder.new(build_logger, clone_url, commit_sha, CONFIG.build_type)
 						logger.info "Building snap for '#{repo}'"
 						snap_path = builder.build
 					rescue Error => e
@@ -114,7 +130,8 @@ module GithubSnapBuilder
 						logger.error "Failed to push/release snap: #{e.message}"
 						@installation_client.create_status(repo, commit_sha, 'error', {
 							context: "Snap Builder",
-							description: "Snap failed to upload/release. Please see logs."
+							description: "Snap failed to upload/release. Please see logs.",
+							target_url: log_url
 						})
 						return
 					end
@@ -122,13 +139,15 @@ module GithubSnapBuilder
 					logger.info 'Built and released snap, all done'
 					@installation_client.create_status(repo, commit_sha, 'success', {
 						context: "Snap Builder",
-						description: "Snap built and released to '#{full_channel}'"
+						description: "Snap built and released to '#{full_channel}'",
+						target_url: log_url
 					})
 				rescue => e
 					logger.error "Unknown error: #{e.message}"
 					@installation_client.create_status(repo, commit_sha, 'error', {
 						context: "Snap Builder",
-						description: "Encountered an error: #{e.message}"
+						description: "Encountered an error. Please see logs.",
+						target_url: log_url
 					})
 					raise
 				ensure
@@ -205,6 +224,13 @@ module GithubSnapBuilder
 				# The action value indicates the which action triggered the event.
 				logger.debug "---- received event #{request.env['HTTP_X_GITHUB_EVENT']}"
 				logger.debug "----    action #{@payload['action']}" unless @payload['action'].nil?
+			end
+
+			def logdir
+				ENV.fetch("SNAP_BUILDER_LOG_DIR", "log")
+			end
+
+			def logfile_path(repo, commit_sha)
 			end
 
 		end

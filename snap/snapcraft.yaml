@@ -15,6 +15,7 @@ apps:
     environment:
       APP_ENV: production
       SNAP_BUILDER_CONFIG: "$SNAP_DATA/config.yaml"
+      SNAP_BUILDER_LOG_DIR: "$SNAP_COMMON/logs"
 
   configure:
     command: wrapper $SNAP/configure

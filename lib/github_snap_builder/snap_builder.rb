@@ -9,8 +9,8 @@ Dir[File.join(__dir__, 'builder_implementations', '*.rb')].each {|file| require 
 
 module GithubSnapBuilder
 	class SnapBuilder
-		def initialize(clone_url, commit_sha, build_type)
-			super()
+		def initialize(logger, clone_url, commit_sha, build_type)
+			@logger = logger
 			@clone_url = clone_url
 			@commit_sha = commit_sha
 			@build_type = build_type
@@ -36,7 +36,7 @@ module GithubSnapBuilder
 					existing_snaps = Dir.glob('*.snap')
 
 					# Now build the snap
-					build_implementation(@base, @build_type).build(tempdir)
+					build_implementation.build(tempdir)
 
 					# Grab the filename of the snap we just built
 					new_snaps = Dir.glob('*.snap') - existing_snaps
@@ -57,7 +57,7 @@ module GithubSnapBuilder
 		end
 
 		def release(snap_path, token, channel)
-			build_implementation(@base, @build_type).release(snap_path, token, channel)
+			build_implementation.release(snap_path, token, channel)
 		end
 
 		def self.supported_build_types
@@ -68,8 +68,8 @@ module GithubSnapBuilder
 
 		private
 
-		def build_implementation(base, type)
-			return GithubSnapBuilder.const_get("#{type.capitalize}Builder").new(base)
+		def build_implementation
+			GithubSnapBuilder.const_get("#{@build_type.capitalize}Builder").new(@logger, @base)
 		end
 
 		def snapcraft_yaml_location
