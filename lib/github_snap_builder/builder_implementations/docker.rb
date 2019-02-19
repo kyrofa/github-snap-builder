@@ -76,7 +76,7 @@ module GithubSnapBuilder
 			ensure
 				# This shouldn't be necessary given the AutoRemove option, but it's
 				# easy to ensure.
-				container.delete(force: true)
+				container.delete(force: true) unless container.nil?
 			end
 		end
 

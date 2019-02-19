@@ -9,9 +9,10 @@ Dir[File.join(__dir__, 'builder_implementations', '*.rb')].each {|file| require 
 
 module GithubSnapBuilder
 	class SnapBuilder
-		def initialize(logger, clone_url, commit_sha, build_type)
+		def initialize(logger, base_url, head_url, commit_sha, build_type)
 			@logger = logger
-			@clone_url = clone_url
+			@base_url = base_url
+			@head_url = head_url
 			@commit_sha = commit_sha
 			@build_type = build_type
 			@base = 'core16'
@@ -19,8 +20,11 @@ module GithubSnapBuilder
 
 		def build
 			Dir.mktmpdir do |tempdir|
-				# First of all, clone the repository and get on the proper hash
-				repo = Rugged::Repository.clone_at(@clone_url, tempdir)
+				# First of all, clone the repository and get on the proper hash. Make
+				# sure to include the base repo so `git describe` has meaning.
+				repo = Rugged::Repository.clone_at(@base_url, tempdir)
+				remote = repo.remotes.create('fork', @head_url)
+				remote.fetch
 				repo.checkout(@commit_sha, {strategy: :force})
 
 				# Before we can actually build the snap, we must first determine the

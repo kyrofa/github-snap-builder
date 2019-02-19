@@ -83,7 +83,8 @@ module GithubSnapBuilder
 			def handle_pull_request_updated_event(payload)
 				pull_request = payload['pull_request']
 				repo = pull_request['base']['repo']['full_name']
-				clone_url = pull_request['head']['repo']['html_url']
+				head_url = pull_request['head']['repo']['html_url']
+				base_url = pull_request['base']['repo']['html_url']
 				commit_sha = pull_request['head']['sha']
 				pr_number = pull_request['number']
 
@@ -103,7 +104,7 @@ module GithubSnapBuilder
 					begin
 						status_reporter.pending("Currently building a snap...")
 
-						builder = SnapBuilder.new(build_logger, clone_url, commit_sha, CONFIG.build_type)
+						builder = SnapBuilder.new(build_logger, base_url, head_url, commit_sha, CONFIG.build_type)
 						logger.info "Building snap for '#{repo}'"
 						snap_path = builder.build
 					rescue Error => e

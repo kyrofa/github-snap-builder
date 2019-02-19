@@ -8,19 +8,24 @@ module GithubSnapBuilder
 			SnapBuilder.any_instance.stubs(:build_implementation).returns(FakeBuildImplementation.new('test-base'))
 			@mock_logger = mock('logger')
 			@mock_repo = mock('repo')
+			@mock_remotes = mock('remotes')
+			@mock_remote = mock('remote')
 			Rugged::Repository.stubs(:clone_at).with do |url, dir|
 				File.write(File.join(dir, 'snapcraft.yaml'), 'base: test-base')
-				url == 'test-url'
+				url == 'base-url'
 			end.returns(@mock_repo)
+			@mock_repo.stubs(:remotes).returns(@mock_remotes)
+			@mock_remotes.stubs(:create).with('fork', 'head-url').returns(@mock_remote)
+			@mock_remote.stubs(:fetch)
 			@mock_repo.stubs(:checkout)
 		end
 
 		def test_constructor
-			SnapBuilder.new(@mock_logger, 'foo', 'bar', 'fake')
+			SnapBuilder.new(@mock_logger, 'base-url', 'head-url', 'test-sha', 'fake')
 		end
 
 		def test_build
-			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'base-url', 'head-url', 'test-sha', 'fake')
 			fake = FakeBuildImplementation.new('test-base', ['test.snap'])
 			builder.stubs(:build_implementation).returns(fake)
 
@@ -28,7 +33,7 @@ module GithubSnapBuilder
 		end
 
 		def test_build_no_snaps
-			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'base-url', 'head-url', 'test-sha', 'fake')
 			assert_raises BuildFailedError do
 				builder.build
 			end
@@ -36,16 +41,19 @@ module GithubSnapBuilder
 
 		def test_build_no_new_snaps
 			mock_repo = mock('repo')
-			Rugged::Repository.stubs(:clone_at).with do |url, dir|
-				url == 'test-url'
+			Rugged::Repository.expects(:clone_at).with do |url, dir|
+				url == 'base-url'
 			end.returns(mock_repo)
+			mock_repo.expects(:remotes).returns(@mock_remotes)
+			@mock_remotes.expects(:create).with('fork', 'head-url').returns(@mock_remote)
+			@mock_remote.expects(:fetch)
 			mock_repo.expects(:checkout).with do |sha, opts|
 				# This existed before the build, so it should be factored out
 				FileUtils.touch('test.snap')
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
-			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'base-url', 'head-url', 'test-sha', 'fake')
 			assert_raises BuildFailedError do
 				builder.build
 			end
@@ -53,16 +61,19 @@ module GithubSnapBuilder
 
 		def test_build_multiple_snaps_takes_latest
 			mock_repo = mock('repo')
-			Rugged::Repository.stubs(:clone_at).with do |url, dir|
-				url == 'test-url'
+			Rugged::Repository.expects(:clone_at).with do |url, dir|
+				url == 'base-url'
 			end.returns(mock_repo)
+			mock_repo.expects(:remotes).returns(@mock_remotes)
+			@mock_remotes.expects(:create).with('fork', 'head-url').returns(@mock_remote)
+			@mock_remote.expects(:fetch)
 			mock_repo.expects(:checkout).with do |sha, opts|
 				# This existed before the build, so it should be factored out
 				FileUtils.touch('test1.snap')
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
-			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'base-url', 'head-url', 'test-sha', 'fake')
 			builder.stubs(:build_implementation).returns(
 				FakeBuildImplementation.new('test-base', ['test2.snap']))
 
@@ -70,7 +81,7 @@ module GithubSnapBuilder
 		end
 
 		def test_build_multiple_snaps_built_error
-			builder = SnapBuilder.new(@mock_logger, 'test-url', 'test-sha', 'fake')
+			builder = SnapBuilder.new(@mock_logger, 'base-url', 'head-url', 'test-sha', 'fake')
 			builder.stubs(:build_implementation).returns(
 				FakeBuildImplementation.new('test-base', ['test1.snap', 'test2.snap']))
 
