@@ -19,40 +19,39 @@ module GithubSnapBuilder
 
 		def build
 			Dir.mktmpdir do |tempdir|
-				Dir.chdir(tempdir) do
-					# First of all, clone the repository and get on the proper hash
-					repo = Rugged::Repository.clone_at(@clone_url, '.',)
-					repo.checkout(@commit_sha, {strategy: :force})
+				# First of all, clone the repository and get on the proper hash
+				repo = Rugged::Repository.clone_at(@clone_url, tempdir)
+				repo.checkout(@commit_sha, {strategy: :force})
 
-					# Before we can actually build the snap, we must first determine the
-					# base to use. The default is "core".
-					snapcraft_yaml = snapcraft_yaml_location
-					@base = YAML.safe_load(File.read(snapcraft_yaml)).fetch("base", @base)
-					if @base == "core"
-						@base = "core16"
-					end
-
-					# Factor out any snaps that existed before we build the new one
-					existing_snaps = Dir.glob('*.snap')
-
-					# Now build the snap
-					build_implementation.build(tempdir)
-
-					# Grab the filename of the snap we just built
-					new_snaps = Dir.glob('*.snap') - existing_snaps
-					if new_snaps.empty?
-						raise BuildFailedError
-					elsif new_snaps.length > 1
-						raise TooManySnapsError, new_snaps
-					end
-
-					# The directory we're in right now will be removed shortly. Copy the
-					# snap somewhere that will live forever, and hand it to the Snap class
-					# (which will remove it when it's done with it).
-					snap_file = Tempfile.create [@commit_sha, '.snap']
-					FileUtils.cp new_snaps[0], snap_file
-					snap_file.path
+				# Before we can actually build the snap, we must first determine the
+				# base to use. The default is "core".
+				snapcraft_yaml = snapcraft_yaml_location(tempdir)
+				@base = YAML.safe_load(File.read(snapcraft_yaml)).fetch("base", @base)
+				if @base == "core"
+					@base = "core16"
 				end
+
+				# Factor out any snaps that existed before we build the new one
+				snaps_glob = File.join(tempdir, '*.snap')
+				existing_snaps = Dir.glob(snaps_glob)
+
+				# Now build the snap
+				build_implementation.build(tempdir)
+
+				# Grab the filename of the snap we just built
+				new_snaps = Dir.glob(snaps_glob) - existing_snaps
+				if new_snaps.empty?
+					raise BuildFailedError
+				elsif new_snaps.length > 1
+					raise TooManySnapsError, new_snaps
+				end
+
+				# The directory we're in right now will be removed shortly. Copy the
+				# snap somewhere that will live forever, and hand it to the Snap class
+				# (which will remove it when it's done with it).
+				snap_file = Tempfile.create [@commit_sha, '.snap']
+				FileUtils.cp new_snaps[0], snap_file
+				snap_file.path
 			end
 		end
 
@@ -72,10 +71,11 @@ module GithubSnapBuilder
 			GithubSnapBuilder.const_get("#{@build_type.capitalize}Builder").new(@logger, @base)
 		end
 
-		def snapcraft_yaml_location
+		def snapcraft_yaml_location(project_dir)
 			["snapcraft.yaml", ".snapcraft.yaml", File.join("snap", "snapcraft.yaml")].each do |f|
-				if File.file? f
-					return f
+				path = File.join(project_dir, f)
+				if File.file? path
+					return path
 				end
 			end
 

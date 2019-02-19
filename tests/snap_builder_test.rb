@@ -8,10 +8,11 @@ module GithubSnapBuilder
 			SnapBuilder.any_instance.stubs(:build_implementation).returns(FakeBuildImplementation.new('test-base'))
 			@mock_logger = mock('logger')
 			@mock_repo = mock('repo')
-			Rugged::Repository.stubs(:clone_at).with('test-url', '.').returns(@mock_repo)
-			@mock_repo.stubs(:checkout).with do
-				File.write('snapcraft.yaml', 'base: test-base')
-			end
+			Rugged::Repository.stubs(:clone_at).with do |url, dir|
+				File.write(File.join(dir, 'snapcraft.yaml'), 'base: test-base')
+				url == 'test-url'
+			end.returns(@mock_repo)
+			@mock_repo.stubs(:checkout)
 		end
 
 		def test_constructor
@@ -35,11 +36,12 @@ module GithubSnapBuilder
 
 		def test_build_no_new_snaps
 			mock_repo = mock('repo')
-			Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+			Rugged::Repository.stubs(:clone_at).with do |url, dir|
+				url == 'test-url'
+			end.returns(mock_repo)
 			mock_repo.expects(:checkout).with do |sha, opts|
 				# This existed before the build, so it should be factored out
 				FileUtils.touch('test.snap')
-				File.write('snapcraft.yaml', 'base: test-base')
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
@@ -51,11 +53,12 @@ module GithubSnapBuilder
 
 		def test_build_multiple_snaps_takes_latest
 			mock_repo = mock('repo')
-			Rugged::Repository.expects(:clone_at).with('test-url', '.').returns(mock_repo)
+			Rugged::Repository.stubs(:clone_at).with do |url, dir|
+				url == 'test-url'
+			end.returns(mock_repo)
 			mock_repo.expects(:checkout).with do |sha, opts|
 				# This existed before the build, so it should be factored out
 				FileUtils.touch('test1.snap')
-				File.write('snapcraft.yaml', 'base: test-base')
 				sha == 'test-sha' && opts == {strategy: :force}
 			end
 
@@ -92,7 +95,7 @@ module GithubSnapBuilder
 		def build(project_directory)
 			unless @snap_names.nil? || @snap_names.empty?
 				@snap_names.each do |f|
-					FileUtils.touch(f)
+					FileUtils.touch(File.join(project_directory, f))
 				end
 			end
 		end
