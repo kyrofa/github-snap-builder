@@ -31,7 +31,7 @@ parts:
     override-build: |
       snapcraftctl build
 
-      # Built and install the gem
+      # Build and install the gem
       gem build github_snap_builder.gemspec
       gem install github_snap_builder-*.gem --env-shebang --no-document
 

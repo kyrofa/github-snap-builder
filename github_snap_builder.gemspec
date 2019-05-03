@@ -10,17 +10,14 @@ Gem::Specification.new do |spec|
 	spec.email         = ["kyrofa@ubuntu.com"]
 
 	spec.summary       = "Github app that builds and releases snaps for each pull request."
-	spec.homepage      = "https://github.com/kyrofa/snap-builder"
+	spec.homepage      = "https://github.com/kyrofa/github-snap-builder"
 	spec.license       = "GPL-3.0"
 
 	# Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
 	# to allow pushing to a single host or delete this section to allow pushing to any host.
 	if spec.respond_to?(:metadata)
-		spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
-
 		spec.metadata["homepage_uri"] = spec.homepage
-		spec.metadata["source_code_uri"] = "https://github.com/kyrofa/snap-builder"
-		spec.metadata["changelog_uri"] = "https://github.com/kyrofa/snap-builder/blob/master/CHANGELOG"
+		spec.metadata["source_code_uri"] = spec.homepage
 	else
 		raise "RubyGems 2.0 or newer is required to protect against public gem pushes."
 	end
