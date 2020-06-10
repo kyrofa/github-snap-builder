@@ -1,0 +1,8 @@
+setup.py
+src/github_snap_builder/__init__.py
+src/github_snap_builder/daemon.py
+src/github_snap_builder.egg-info/PKG-INFO
+src/github_snap_builder.egg-info/SOURCES.txt
+src/github_snap_builder.egg-info/dependency_links.txt
+src/github_snap_builder.egg-info/entry_points.txt
+src/github_snap_builder.egg-info/top_level.txt
