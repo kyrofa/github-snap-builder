@@ -1,3 +1,0 @@
-[console_scripts]
-github-snap-builder = github_snap_builder.daemon:main
-

@@ -1,15 +1,4 @@
-/.bundle/
-/.yardoc
-/_yardoc/
-/coverage/
-/doc/
-/pkg/
-/spec/reports/
-/tmp/
-*.gem
 snap/.snapcraft/
-parts
-stage/
-prime/
 *.snap
 .vscode/
+__pycache__/
