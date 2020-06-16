@@ -7,5 +7,7 @@ setup(
     author_email="kyrofa@ubuntu.com",
     packages=find_packages("src"),
     package_dir={"": "src"},
-    entry_points={"console_scripts": ["github-snap-builder=github_snap_builder._server:_main"]},
+    entry_points={
+        "console_scripts": ["github-snap-builder=github_snap_builder._server:_main"]
+    },
 )

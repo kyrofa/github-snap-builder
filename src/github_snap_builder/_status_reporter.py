@@ -17,4 +17,6 @@ class StatusReporter:
         self._create_status("error", message)
 
     def _create_status(self, state: str, description: str) -> None:
-        self._repo.create_status(self._commit_sha, state, self._log_url, description, "Snap Builder")
+        self._repo.create_status(
+            self._commit_sha, state, self._log_url, description, "Snap Builder"
+        )

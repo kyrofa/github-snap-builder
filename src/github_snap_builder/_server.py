@@ -11,12 +11,12 @@ _event_handlers = {
 }
 
 
-@_APP.route("/", methods=['GET', 'POST'])
+@_APP.route("/", methods=["GET", "POST"])
 def _root():
     if flask.request.method == "POST":
         _verify_webhook_signature(flask.request)
         _handle_post(flask.request)
-        print('post')
+        print("post")
         return "post"
         # # GitHub sends the secret key in the payload header
         # if utils.match_webhook_secret(request):
@@ -42,7 +42,7 @@ def _root():
         # 	return handlers.handle_unauthorized_requests()
     else:
         # Will be using this to get logs
-        print('get')
+        print("get")
         return "get"
 
 
@@ -51,11 +51,11 @@ def _main():
 
 
 def _verify_webhook_signature(request):
-    signature = request.headers.get('X-Hub-Signature')
+    signature = request.headers.get("X-Hub-Signature")
     if not signature:
         flask.abort(403)
 
-    sha_name, signature = signature.split('=')
+    sha_name, signature = signature.split("=")
     mac = hmac.new("test-secret".encode(), msg=request.data, digestmod=sha_name)
 
     if not hmac.compare_digest(str(mac.hexdigest()), str(signature)):
@@ -63,7 +63,7 @@ def _verify_webhook_signature(request):
 
 
 def _handle_post(request):
-    event = request.headers.get('X-Github-Event')
+    event = request.headers.get("X-Github-Event")
     if not event:
         flask.abort(500)
 

@@ -14,18 +14,22 @@ class SnapBuilder:
         self._commit_sha = commit_sha
 
     def build_and_release(self):
-        with _cloned_git_repo(self._base_url, self._head_url, self._commit_sha) as directory:
+        with _cloned_git_repo(
+            self._base_url, self._head_url, self._commit_sha
+        ) as directory:
             # Build the snaps
-            subprocess.check_call(['snapcraft', 'remote-build'], cwd=directory)
+            subprocess.check_call(["snapcraft", "remote-build"], cwd=directory)
 
             # Release the snaps
             snaps = glob.glob(pathlib.Path(directory) / "*.snap")
             if not snaps:
-                print('No snaps found')
+                print("No snaps found")
                 return
 
             for snap in snaps:
-                subprocess.check_call(['snapcraft', 'upload', snap, '--release=beta/pr-foo'])
+                subprocess.check_call(
+                    ["snapcraft", "upload", snap, "--release=beta/pr-foo"]
+                )
 
 
 @contextlib.contextmanager

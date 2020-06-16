@@ -1,0 +1,13 @@
+[flake8]
+ignore =
+    # let black handle this
+    E501,
+    # http://hexbyteinc.com/ambv-black/#line-breaks--binary-operators
+    W503
+exclude =
+    # No need to traverse our git directory
+    .git,
+    .mypy_cache,
+    .vscode,
+    # There's no value in checking cache directories
+    __pycache__,
