@@ -1,5 +1,7 @@
 import hmac
 
+import github_snap_builder
+
 from unittest import mock
 
 
@@ -27,34 +29,26 @@ def test_unhandled_event(mock_verify, client):
 
 
 @mock.patch("github_snap_builder._server._verify_webhook_signature", autospec=True)
-@mock.patch("github_snap_builder._handlers._authenticated_github_app", autospec=True)
-@mock.patch("github_snap_builder._snap_builder.SnapBuilder", autospec=True)
-def test_pull_request(mock_snap_builder, mock_app, mock_verify, client):
-    build_mock = mock_snap_builder.return_value.build_and_release
+def test_handler_called(mock_verify, client):
+    mock_handler = mock.MagicMock()
+    github_snap_builder._server._event_handlers["test_event"] = mock_handler
 
-    response = client.post(
-        "/",
-        headers={"X-Github-Event": "pull_request"},
-        json=dict(
-            installation=dict(id=1),
-            pull_request=dict(
-                number=1,
-                base=dict(
-                    repo=dict(
-                        full_name="test-owner/test-base-repo",
-                        html_url="https://example.com/test-base-repo",
-                    )
-                ),
-                head=dict(
-                    sha="1234", repo=dict(html_url="https://example.com/test-head-repo")
-                ),
+    json = dict(
+        installation=dict(id=1),
+        pull_request=dict(
+            number=1,
+            base=dict(
+                repo=dict(
+                    full_name="test-owner/test-base-repo",
+                    html_url="https://example.com/test-base-repo",
+                )
+            ),
+            head=dict(
+                sha="1234", repo=dict(html_url="https://example.com/test-head-repo")
             ),
         ),
     )
+
+    response = client.post("/", headers={"X-Github-Event": "test_event"}, json=json,)
     assert response.status_code == 200
-    mock_snap_builder.assert_called_once_with(
-        "https://example.com/test-base-repo",
-        "https://example.com/test-head-repo",
-        "1234",
-    )
-    build_mock.assert_called_once_with()
+    mock_handler.assert_called_once_with(json)

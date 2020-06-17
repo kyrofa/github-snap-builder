@@ -2,3 +2,4 @@ snap/.snapcraft/
 *.snap
 .vscode/
 __pycache__/
+.coverage
